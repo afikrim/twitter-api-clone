@@ -10,9 +10,6 @@ import (
 	"time"
 
 	"github.com/afikrim/go-hexa-template/config"
-	todo_service "github.com/afikrim/go-hexa-template/internal/core/services/todo"
-	http_handler "github.com/afikrim/go-hexa-template/internal/handlers/http"
-	todo_repository "github.com/afikrim/go-hexa-template/internal/repositories/todo"
 	"github.com/labstack/echo"
 	"gorm.io/driver/mysql"
 	"gorm.io/driver/postgres"
@@ -35,18 +32,6 @@ func main() {
 
 	e := echo.New()
 	e.Logger.SetLevel(log.LstdFlags)
-
-	apiV1Router := e.Group("/api/v1")
-
-	todoRepository := todo_repository.NewTodoRepository(db)
-	todoService := todo_service.NewTodoService(todoRepository)
-	todoHandler := http_handler.NewTodoHttpHandler(todoService)
-	todoRouter := apiV1Router.Group("/todos")
-
-	todoRouter.POST("/", todoHandler.Create)
-	todoRouter.GET("/", todoHandler.FindAll)
-	todoRouter.PATCH("/:id", todoHandler.Update)
-	todoRouter.DELETE("/:id", todoHandler.Remove)
 
 	go func() {
 		if err := e.Start(address); err != nil {
@@ -116,7 +101,7 @@ func NewDatabaseInstance(config *config.Config) (*gorm.DB, error) {
 	}
 
 	if config.DBAutoMigrate {
-		instance.AutoMigrate(&todo_repository.Todo{})
+		instance.AutoMigrate()
 	}
 
 	return instance, nil
