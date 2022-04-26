@@ -21,3 +21,6 @@
 go.work
 
 .env
+
+# SQL Tools sessions
+*.session.sql

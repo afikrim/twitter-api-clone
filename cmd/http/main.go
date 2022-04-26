@@ -10,6 +10,9 @@ import (
 	"time"
 
 	"github.com/afikrim/go-hexa-template/config"
+	country_service "github.com/afikrim/go-hexa-template/internal/core/services/country"
+	http_handler "github.com/afikrim/go-hexa-template/internal/handlers/http"
+	country_repository "github.com/afikrim/go-hexa-template/internal/repositories/country"
 	"github.com/labstack/echo"
 	"gorm.io/driver/mysql"
 	"gorm.io/driver/postgres"
@@ -32,6 +35,15 @@ func main() {
 
 	e := echo.New()
 	e.Logger.SetLevel(log.LstdFlags)
+
+	apiV1Router := e.Group("/api/v1")
+
+	countryRepository := country_repository.NewCountryRepository(db)
+	countryService := country_service.NewCountryService(countryRepository)
+	countryHandler := http_handler.NewCountryHandler(countryService)
+
+	// Register routes
+	countryHandler.RegisterRoutes(apiV1Router)
 
 	go func() {
 		if err := e.Start(address); err != nil {
@@ -101,7 +113,7 @@ func NewDatabaseInstance(config *config.Config) (*gorm.DB, error) {
 	}
 
 	if config.DBAutoMigrate {
-		instance.AutoMigrate()
+		instance.AutoMigrate(&country_repository.Country{})
 	}
 
 	return instance, nil
