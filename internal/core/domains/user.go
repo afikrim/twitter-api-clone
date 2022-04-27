@@ -20,18 +20,18 @@ type User struct {
 type UpdateUserDto struct {
 	Fullname  string `json:"fullname"`
 	Gender    *bool  `json:"gender"`
-	BirthDate string `json:"birthdate"`
+	BirthDate string `json:"birthdate" validate:"regexp=^.*(?=.{8,})(?=.*[a-zA-Z])(?=.*\\d).*$"`
 	CountryID uint64 `json:"country_id"`
 }
 
 type UpdateUserCredentialDto struct {
-	Username string `json:"username"`
-	Phone    string `json:"phone"`
-	Email    string `json:"email"`
+	Username string `json:"username" `
+	Phone    string `json:"phone" `
+	Email    string `json:"email" validate:"email"`
 }
 
 type UpdateUserPasswordDto struct {
-	Password string `json:"password"`
+	Password string `json:"password" validate:"regexp=^.*(?=.{8,})(?=.*[a-zA-Z])(?=.*\\d).*$"`
 }
 
 type QueryParamDto struct {

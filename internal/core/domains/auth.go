@@ -37,19 +37,19 @@ type AuthWithoutRefresh struct {
 }
 
 type RegisterDto struct {
-	Username  string `json:"username"`
-	Email     string `json:"email"`
-	Phone     string `json:"phone"`
-	Password  string `json:"password"`
-	Fullname  string `json:"fullname"`
-	Gender    bool   `json:"gender"`
-	BirthDate string `json:"birthdate"`
-	CountryID uint64 `json:"country_id"`
+	Username  string `json:"username" validate:"required"`
+	Email     string `json:"email" validate:"required;email"`
+	Phone     string `json:"phone" validate:"required"`
+	Password  string `json:"password" validate:"required;regexp=^.*(?=.{8,})(?=.*[a-zA-Z])(?=.*\\d).*$"`
+	Fullname  string `json:"fullname" validate:"required"`
+	Gender    bool   `json:"gender" validate:"required"`
+	BirthDate string `json:"birthdate" validate:"required;regexp=^\\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$"`
+	CountryID uint64 `json:"country_id" validate:"required"`
 }
 
 type LoginDto struct {
-	Credential string `json:"credential"`
-	Password   string `json:"password"`
+	Credential string `json:"credential" validate:"required"`
+	Password   string `json:"password" validate:"required"`
 }
 
 func (s *Session) GenerateRefreshToken(secret string) string {

@@ -6,6 +6,7 @@ import (
 
 	"github.com/afikrim/go-hexa-template/internal/core/domains"
 	"github.com/afikrim/go-hexa-template/internal/core/ports/repositories"
+	"github.com/go-playground/validator/v10"
 )
 
 var (
@@ -26,6 +27,11 @@ func NewUserService(repo repositories.UserRepository) *service {
 }
 
 func (s *service) FindAll(ctx context.Context, query *domains.QueryParamDto) ([]domains.User, error) {
+	validate := validator.New()
+	if err := validate.Struct(query); err != nil {
+		return nil, err
+	}
+
 	if query.Limit == nil {
 		query.Limit = &defaultLimit
 	}
