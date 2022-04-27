@@ -5,7 +5,7 @@ import (
 	"net/http"
 
 	"github.com/afikrim/go-hexa-template/internal/core/ports/services"
-	"github.com/labstack/echo"
+	"github.com/labstack/echo/v4"
 )
 
 type handler struct {

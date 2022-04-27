@@ -19,6 +19,13 @@ type Config struct {
 	DBDebug       bool   `env:"DB_DEBUG" envDefault:"false"`
 	DBDialect     string `env:"DB_DIALECT" envDefault:"mysql"`
 	DBAutoMigrate bool   `env:"DB_AUTO_MIGRATE" envDefault:"true"`
+
+	RedisHost      string `env:"REDIS_HOST" envDefault:"localhost"`
+	RedisPort      int    `env:"REDIS_PORT" envDefault:"6379"`
+	RedisPassword  string `env:"REDIS_PASSWORD"`
+	RedisDB        int    `env:"REDIS_DB" envDefault:"0"`
+	RedisCacheDB   int    `env:"REDIS_CACHE_DB" envDefault:"1"`
+	RedisSessionDB int    `env:"REDIS_SESSION_DB" envDefault:"2"`
 }
 
 func GetConfig() (*Config, error) {

@@ -10,14 +10,27 @@ import (
 	"time"
 
 	"github.com/afikrim/go-hexa-template/config"
+	auth_service "github.com/afikrim/go-hexa-template/internal/core/services/auth"
 	country_service "github.com/afikrim/go-hexa-template/internal/core/services/country"
+	user_service "github.com/afikrim/go-hexa-template/internal/core/services/user"
 	http_handler "github.com/afikrim/go-hexa-template/internal/handlers/http"
 	country_repository "github.com/afikrim/go-hexa-template/internal/repositories/country"
-	"github.com/labstack/echo"
+	session_repository "github.com/afikrim/go-hexa-template/internal/repositories/session"
+	user_repository "github.com/afikrim/go-hexa-template/internal/repositories/user"
+	"github.com/go-redis/redis/v8"
+	"github.com/labstack/echo/v4"
 	"gorm.io/driver/mysql"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
+)
+
+type RedisConnType string
+
+const (
+	Default RedisConnType = "default"
+	Cache                 = "cache"
+	Session               = "session"
 )
 
 func main() {
@@ -31,21 +44,32 @@ func main() {
 		panic(err)
 	}
 
-	address := fmt.Sprintf("%s:%d", cfg.Host, cfg.Port)
+	redisSession, err := NewRedisInstance(cfg, Session)
+	if err != nil {
+		panic(err)
+	}
 
 	e := echo.New()
 	e.Logger.SetLevel(log.LstdFlags)
 
-	apiV1Router := e.Group("/api/v1")
-
 	countryRepository := country_repository.NewCountryRepository(db)
+	userRepository := user_repository.NewUserRepository(db)
+	sessionRepository := session_repository.NewSessionRepository(redisSession)
 	countryService := country_service.NewCountryService(countryRepository)
+	userService := user_service.NewUserService(userRepository)
+	authService := auth_service.NewAuthService(userRepository, sessionRepository)
 	countryHandler := http_handler.NewCountryHandler(countryService)
+	userHandler := http_handler.NewUserHandler(userService)
+	authHandler := http_handler.NewAuthHandler(authService)
 
 	// Register routes
+	apiV1Router := e.Group("/api/v1")
 	countryHandler.RegisterRoutes(apiV1Router)
+	userHandler.RegisterRoutes(apiV1Router)
+	authHandler.RegisterRoutes(apiV1Router)
 
 	go func() {
+		address := fmt.Sprintf("%s:%d", cfg.Host, cfg.Port)
 		if err := e.Start(address); err != nil {
 			log.Fatalf("Server stopped: %v", err)
 		}
@@ -113,8 +137,37 @@ func NewDatabaseInstance(config *config.Config) (*gorm.DB, error) {
 	}
 
 	if config.DBAutoMigrate {
-		instance.AutoMigrate(&country_repository.Country{})
+		instance.AutoMigrate(&country_repository.Country{}, &user_repository.User{})
 	}
 
 	return instance, nil
+}
+
+func NewRedisInstance(config *config.Config, connType RedisConnType) (*redis.Client, error) {
+	ctx := context.Background()
+	redisConf := redis.Options{
+		Addr:     fmt.Sprintf("%s:%d", config.RedisHost, config.RedisPort),
+		Password: config.RedisPassword,
+	}
+	switch connType {
+	case Default:
+		redisConf.DB = config.RedisDB
+	case Cache:
+		redisConf.DB = config.RedisCacheDB
+	case Session:
+		redisConf.DB = config.RedisSessionDB
+	default:
+		return nil, fmt.Errorf("unsupported redis connection type: %s", connType)
+	}
+
+	client := redis.NewClient(&redis.Options{
+		DB: config.RedisDB,
+	})
+
+	_, err := client.Ping(ctx).Result()
+	if err != nil {
+		return nil, err
+	}
+
+	return client, nil
 }
