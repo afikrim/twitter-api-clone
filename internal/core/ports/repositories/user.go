@@ -4,11 +4,12 @@ import (
 	"context"
 
 	"github.com/afikrim/go-hexa-template/internal/core/domains"
+	pkg_pagination "github.com/afikrim/go-hexa-template/pkg/pagination"
 )
 
 type UserRepository interface {
 	Create(ctx context.Context, dto *domains.RegisterDto) (*domains.User, error)
-	FindAll(ctx context.Context, query *domains.QueryParamDto) ([]domains.UserSummary, error)
+	FindAll(ctx context.Context, query *domains.QueryParamUserDto) ([]domains.UserSummary, *pkg_pagination.CursorPagination, error)
 	FindByID(ctx context.Context, id int64) (*domains.User, error)
 	FindByUsername(ctx context.Context, username string) (*domains.User, error)
 	FindByCredential(ctx context.Context, credential string) (*domains.User, error)

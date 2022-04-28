@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/afikrim/go-hexa-template/internal/core/domains"
+	pkg_pagination "github.com/afikrim/go-hexa-template/pkg/pagination"
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
 )
@@ -30,29 +31,28 @@ func (r *repository) Create(ctx context.Context, dto *domains.RegisterDto) (*dom
 	return userModel.ToDomain(), nil
 }
 
-func (r *repository) FindAll(ctx context.Context, query *domains.QueryParamDto) ([]domains.UserSummary, error) {
-	dbQuery := r.db.WithContext(ctx)
+func (r *repository) FindAll(ctx context.Context, query *domains.QueryParamUserDto) ([]domains.UserSummary, *pkg_pagination.CursorPagination, error) {
+	qb := r.db.Model(&User{}).WithContext(ctx)
+	countQb := qb
 	if query.Search != "" {
 		search := fmt.Sprintf("%%%s%%", query.Search)
-		dbQuery = dbQuery.Where("username LIKE ? OR fullname LIKE ?", search, search)
+		qb = qb.Where("username LIKE ? OR fullname LIKE ?", search, search)
+		countQb = qb
 	}
 
-	if query.SortBy != "" && query.OrderBy != "" {
-		orderby := fmt.Sprintf("%s %s", query.SortBy, query.OrderBy)
-		dbQuery = dbQuery.Order(orderby)
-	}
-
-	if query.Limit != nil {
-		dbQuery = dbQuery.Limit(*query.Limit)
-	}
-
-	if query.Offset != nil {
-		dbQuery = dbQuery.Offset(*query.Offset)
-	}
+	orderby := fmt.Sprintf("%s %s", query.SortBy, query.OrderBy)
+	qb.Limit(*query.Limit)
+	qb.Offset(*query.Offset)
+	qb.Order(orderby)
 
 	var userModels []User
-	if err := dbQuery.Find(&userModels).Error; err != nil {
-		return nil, err
+	var count int64
+	err, countErr := qb.Find(&userModels).Error, countQb.Error
+	if err != nil {
+		return nil, nil, err
+	}
+	if countErr != nil {
+		return nil, nil, countErr
 	}
 
 	var users []domains.UserSummary
@@ -60,7 +60,16 @@ func (r *repository) FindAll(ctx context.Context, query *domains.QueryParamDto) 
 		users = append(users, *userModel.ToDomainSummary())
 	}
 
-	return users, nil
+	next := int64(*query.Offset) + int64(*query.Limit)
+	if next >= count {
+		next = -1
+	}
+	cursor := &pkg_pagination.CursorPagination{
+		Current: int64(*query.Offset),
+		Next:    next,
+	}
+
+	return users, cursor, nil
 }
 
 func (r *repository) FindByID(ctx context.Context, id int64) (*domains.User, error) {

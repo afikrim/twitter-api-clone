@@ -6,6 +6,7 @@ import (
 
 	"github.com/afikrim/go-hexa-template/internal/core/domains"
 	"github.com/afikrim/go-hexa-template/internal/core/ports/repositories"
+	pkg_pagination "github.com/afikrim/go-hexa-template/pkg/pagination"
 	"github.com/go-playground/validator/v10"
 )
 
@@ -26,10 +27,10 @@ func NewUserService(repo repositories.UserRepository) *service {
 	}
 }
 
-func (s *service) FindAll(ctx context.Context, query *domains.QueryParamDto) ([]domains.UserSummary, error) {
+func (s *service) FindAll(ctx context.Context, query *domains.QueryParamUserDto) ([]domains.UserSummary, *pkg_pagination.CursorPagination, error) {
 	validate := validator.New()
 	if err := validate.Struct(query); err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	if query.Limit == nil {
@@ -53,12 +54,12 @@ func (s *service) FindAll(ctx context.Context, query *domains.QueryParamDto) ([]
 		query.OrderBy = defaultOrderBy
 	}
 
-	users, err := s.repo.FindAll(ctx, query)
+	users, cursor, err := s.repo.FindAll(ctx, query)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
-	return users, nil
+	return users, cursor, nil
 }
 
 func (s *service) FindByID(ctx context.Context, id string) (*domains.User, error) {

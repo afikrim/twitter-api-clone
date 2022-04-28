@@ -9,6 +9,7 @@ import (
 
 	"github.com/afikrim/go-hexa-template/internal/core/domains"
 	"github.com/afikrim/go-hexa-template/internal/core/ports/services"
+	pkg_order "github.com/afikrim/go-hexa-template/pkg/order"
 	"github.com/golang-jwt/jwt"
 	"github.com/labstack/echo/v4"
 )
@@ -26,30 +27,32 @@ func NewUserHandler(service services.UserService) *UserHandler {
 func (h *UserHandler) FindAll(e echo.Context) error {
 	ctx := context.Background()
 
-	query := &domains.QueryParamDto{
-		OrderBy: e.QueryParam("orderby"),
-		SortBy:  e.QueryParam("sortby"),
-		Search:  e.QueryParam("search"),
+	query := &domains.QueryParamUserDto{
+		QueryParamOrderDto: pkg_order.QueryParamOrderDto{
+			OrderBy: e.QueryParam("orderby"),
+			SortBy:  e.QueryParam("sortby"),
+		},
+		Search: e.QueryParam("search"),
 	}
 	if e.QueryParam("limit") != "" {
 		limit, _ := strconv.Atoi(e.QueryParam("limit"))
-		query.Limit = &limit
+		query.QueryParamPaginationDto.Limit = &limit
 	}
 	if e.QueryParam("offset") != "" {
 		offset, _ := strconv.Atoi(e.QueryParam("offset"))
-		query.Offset = &offset
+		query.QueryParamPaginationDto.Offset = &offset
 	}
 	if e.QueryParam("page") != "" {
 		page, _ := strconv.Atoi(e.QueryParam("page"))
-		query.Page = &page
+		query.QueryParamPaginationDto.Page = &page
 	}
 
-	users, err := h.service.FindAll(ctx, query)
+	users, cursor, err := h.service.FindAll(ctx, query)
 	if err != nil {
 		return e.JSON(http.StatusInternalServerError, &Response{Status: http.StatusInternalServerError, Message: err.Error()})
 	}
 
-	return e.JSON(http.StatusOK, &Response{Status: http.StatusOK, Message: "Successfully get all users", Data: map[string]interface{}{"users": users}})
+	return e.JSON(http.StatusOK, &Response{Status: http.StatusOK, Message: "Successfully get all users", Data: map[string]interface{}{"users": users}, Meta: map[string]interface{}{"cursor": cursor}})
 }
 
 func (h *UserHandler) FindByUsername(e echo.Context) error {

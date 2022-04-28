@@ -1,6 +1,11 @@
 package domains
 
-import "golang.org/x/crypto/bcrypt"
+import (
+	"golang.org/x/crypto/bcrypt"
+
+	pkg_order "github.com/afikrim/go-hexa-template/pkg/order"
+	pkg_pagination "github.com/afikrim/go-hexa-template/pkg/pagination"
+)
 
 type User struct {
 	ID        uint64   `json:"id"`
@@ -42,13 +47,14 @@ type UpdateUserPasswordDto struct {
 	Password string `json:"password" validate:"regexp=^.*(?=.{8,})(?=.*[a-zA-Z])(?=.*\\d).*$"`
 }
 
-type QueryParamDto struct {
-	Search  string
-	OrderBy string
-	SortBy  string
-	Offset  *int
-	Limit   *int
-	Page    *int
+type QueryParamUserDto struct {
+	Search string
+	pkg_pagination.QueryParamPaginationDto
+	pkg_order.QueryParamOrderDto
+}
+
+type QueryParamFollowDto struct {
+	pkg_pagination.QueryParamPaginationDto
 }
 
 func (u *User) IsPasswordValid(password string) bool {
