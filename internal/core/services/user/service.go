@@ -26,7 +26,7 @@ func NewUserService(repo repositories.UserRepository) *service {
 	}
 }
 
-func (s *service) FindAll(ctx context.Context, query *domains.QueryParamDto) ([]domains.User, error) {
+func (s *service) FindAll(ctx context.Context, query *domains.QueryParamDto) ([]domains.UserSummary, error) {
 	validate := validator.New()
 	if err := validate.Struct(query); err != nil {
 		return nil, err

@@ -13,8 +13,16 @@ type User struct {
 	BirthDate string   `json:"birthdate"`
 	Verified  bool     `json:"verified"`
 	Country   *Country `json:"country"`
+	Following int64    `json:"following"`
+	Followes  int64    `json:"followers"`
 	CreatedAt string   `json:"created_at"`
 	UpdatedAt string   `json:"updated_at"`
+}
+
+type UserSummary struct {
+	ID       uint64 `json:"id"`
+	Username string `json:"username"`
+	Fullname string `json:"fullname"`
 }
 
 type UpdateUserDto struct {

@@ -30,7 +30,7 @@ func (r *repository) Create(ctx context.Context, dto *domains.RegisterDto) (*dom
 	return userModel.ToDomain(), nil
 }
 
-func (r *repository) FindAll(ctx context.Context, query *domains.QueryParamDto) ([]domains.User, error) {
+func (r *repository) FindAll(ctx context.Context, query *domains.QueryParamDto) ([]domains.UserSummary, error) {
 	dbQuery := r.db.WithContext(ctx)
 	if query.Search != "" {
 		search := fmt.Sprintf("%%%s%%", query.Search)
@@ -55,9 +55,9 @@ func (r *repository) FindAll(ctx context.Context, query *domains.QueryParamDto) 
 		return nil, err
 	}
 
-	var users []domains.User
+	var users []domains.UserSummary
 	for _, userModel := range userModels {
-		users = append(users, *userModel.ToDomain())
+		users = append(users, *userModel.ToDomainSummary())
 	}
 
 	return users, nil
@@ -73,30 +73,31 @@ func (r *repository) FindByID(ctx context.Context, id int64) (*domains.User, err
 }
 
 func (r *repository) FindByUsername(ctx context.Context, username string) (*domains.User, error) {
+	qb := r.db.WithContext(ctx).Model(&User{})
+	qb.Where("username = ?", username)
+	qb.Joins("Country")
+
 	var userModel User
-	if err := r.db.WithContext(ctx).Joins("Country").Where("username = ?", username).First(&userModel).Error; err != nil {
+	if err := qb.Scan(&userModel).Error; err != nil {
+		return nil, err
+	}
+	if err := r.db.WithContext(ctx).Table("user_following").Where("follower_id = ?", userModel.ID).Count(&userModel.FollowingCount).Error; err != nil {
+		return nil, err
+	}
+	if err := r.db.WithContext(ctx).Table("user_following").Where("following_id = ?", userModel.ID).Count(&userModel.FollowersCount).Error; err != nil {
+		return nil, err
+	}
+
+	return userModel.ToDomainDetail(), nil
+}
+
+func (r *repository) FindByCredential(ctx context.Context, credential string) (*domains.User, error) {
+	var userModel User
+	if err := r.db.WithContext(ctx).Where("username = ? OR email = ? OR phone = ?", credential, credential, credential).First(&userModel).Error; err != nil {
 		return nil, err
 	}
 
 	return userModel.ToDomainWithCountryAndTimestamps(), nil
-}
-
-func (r *repository) FindByEmail(ctx context.Context, email string) (*domains.User, error) {
-	var userModel User
-	if err := r.db.WithContext(ctx).Where("email = ?", email).First(&userModel).Error; err != nil {
-		return nil, err
-	}
-
-	return userModel.ToDomainWithTimestamps(), nil
-}
-
-func (r *repository) FindByPhone(ctx context.Context, phone string) (*domains.User, error) {
-	var userModel User
-	if err := r.db.WithContext(ctx).Where("phone = ?", phone).First(&userModel).Error; err != nil {
-		return nil, err
-	}
-
-	return userModel.ToDomainWithTimestamps(), nil
 }
 
 func (r *repository) Update(ctx context.Context, id int64, dto *domains.UpdateUserDto) (*domains.User, error) {

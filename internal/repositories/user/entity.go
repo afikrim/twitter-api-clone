@@ -10,20 +10,24 @@ import (
 )
 
 type User struct {
-	ID        uint64                     `gorm:"column:id;not null;primaryKey;autoIncrement"`
-	Username  string                     `gorm:"column:username;type:varchar(255);not null;unique"`
-	Phone     string                     `gorm:"column:phone;type:varchar(255);not null;unique"`
-	Email     string                     `gorm:"column:email;type:varchar(255);not null;unique"`
-	Password  string                     `gorm:"column:password;type:varchar(255);not null"`
-	Fullname  string                     `gorm:"column:fullname;type:varchar(255);not null"`
-	Gender    bool                       `gorm:"column:gender;not null;default:false"`
-	Verified  bool                       `gorm:"column:verified;not null;default:false"`
-	BirthDate time.Time                  `gorm:"column:birthdate;type:date;not null"`
-	CountryID uint64                     `gorm:"column:country_id;type:bigint;not null"`
-	Country   country_repository.Country `gorm:"foreignKey:country_id;references:id;target:countries"`
-	CreatedAt *time.Time                 `gorm:"column:created_at;not null;autoCreateTime"`
-	UpdatedAt *time.Time                 `gorm:"column:updated_at;not null;autoUpdateTime"`
-	DeletedAt gorm.DeletedAt             `gorm:"column:deleted_at"`
+	ID             uint64                     `gorm:"column:id;not null;primaryKey;autoIncrement"`
+	Username       string                     `gorm:"column:username;type:varchar(255);not null;unique"`
+	Phone          string                     `gorm:"column:phone;type:varchar(255);not null;unique"`
+	Email          string                     `gorm:"column:email;type:varchar(255);not null;unique"`
+	Password       string                     `gorm:"column:password;type:varchar(255);not null"`
+	Fullname       string                     `gorm:"column:fullname;type:varchar(255);not null"`
+	Gender         bool                       `gorm:"column:gender;not null;default:false"`
+	Verified       bool                       `gorm:"column:verified;not null;default:false"`
+	BirthDate      time.Time                  `gorm:"column:birthdate;type:date;not null"`
+	CountryID      uint64                     `gorm:"column:country_id;type:bigint;not null"`
+	Country        country_repository.Country `gorm:"foreignKey:country_id;references:id;target:countries"`
+	Following      []User                     `gorm:"many2many:user_following;foreignKey:id;joinForeignKey:following_id;references:id;joinReferences:follower_id"`
+	FollowingCount int64                      `gorm:"-"`
+	Followers      []User                     `gorm:"many2many:user_following;foreignKey:id;joinForeignKey:following_id;references:id;joinReferences:follower_id"`
+	FollowersCount int64                      `gorm:"-"`
+	CreatedAt      *time.Time                 `gorm:"column:created_at;not null;autoCreateTime"`
+	UpdatedAt      *time.Time                 `gorm:"column:updated_at;not null;autoUpdateTime"`
+	DeletedAt      gorm.DeletedAt             `gorm:"column:deleted_at"`
 }
 
 func (User) TableName() string {
@@ -44,52 +48,43 @@ func (u *User) ToDomain() *domains.User {
 	}
 }
 
-func (u *User) ToDomainWithTimestamps() *domains.User {
-	return &domains.User{
-		ID:        u.ID,
-		Username:  u.Username,
-		Phone:     u.Phone,
-		Email:     u.Email,
-		Password:  u.Password,
-		Fullname:  u.Fullname,
-		Gender:    u.Gender,
-		Verified:  u.Verified,
-		BirthDate: u.BirthDate.Format("2006-01-02"),
-		CreatedAt: u.CreatedAt.Format("2006-01-02 15:04:05"),
-		UpdatedAt: u.UpdatedAt.Format("2006-01-02 15:04:05"),
+func (u *User) ToDomainSummary() *domains.UserSummary {
+	return &domains.UserSummary{
+		ID:       u.ID,
+		Username: u.Username,
+		Fullname: u.Fullname,
 	}
+}
+
+func (u *User) ToDomainWithTimestamps() *domains.User {
+	user := u.ToDomain()
+	user.CreatedAt = u.CreatedAt.Format("2006-01-02 15:04:05")
+	user.UpdatedAt = u.UpdatedAt.Format("2006-01-02 15:04:05")
+
+	return user
 }
 
 func (u *User) ToDomainWithCountry() *domains.User {
-	return &domains.User{
-		ID:        u.ID,
-		Username:  u.Username,
-		Phone:     u.Phone,
-		Email:     u.Email,
-		Password:  u.Password,
-		Fullname:  u.Fullname,
-		Gender:    u.Gender,
-		Verified:  u.Verified,
-		BirthDate: u.BirthDate.Format("2006-01-02"),
-		Country:   u.Country.ToDomain(),
-	}
+	user := u.ToDomain()
+	user.Country = u.Country.ToDomain()
+
+	return user
 }
 
 func (u *User) ToDomainWithCountryAndTimestamps() *domains.User {
-	return &domains.User{
-		ID:        u.ID,
-		Username:  u.Username,
-		Phone:     u.Phone,
-		Email:     u.Email,
-		Password:  u.Password,
-		Fullname:  u.Fullname,
-		Gender:    u.Gender,
-		Verified:  u.Verified,
-		BirthDate: u.BirthDate.Format("2006-01-02"),
-		Country:   u.Country.ToDomain(),
-		CreatedAt: u.CreatedAt.Format("2006-01-02 15:04:05"),
-		UpdatedAt: u.UpdatedAt.Format("2006-01-02 15:04:05"),
-	}
+	user := u.ToDomainWithCountry()
+	user.CreatedAt = u.CreatedAt.Format("2006-01-02 15:04:05")
+	user.UpdatedAt = u.UpdatedAt.Format("2006-01-02 15:04:05")
+
+	return user
+}
+
+func (u *User) ToDomainDetail() *domains.User {
+	user := u.ToDomainWithCountryAndTimestamps()
+	user.Followes = u.FollowingCount
+	user.Following = u.FollowersCount
+
+	return user
 }
 
 func (User) FromRegisterDto(d *domains.RegisterDto) *User {

@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"regexp"
 	"strconv"
 	"time"
 
@@ -44,21 +43,7 @@ func (s *service) Register(ctx context.Context, dto *domains.RegisterDto) error 
 }
 
 func (s *service) Login(ctx context.Context, dto *domains.LoginDto) (*domains.AuthWithRefresh, error) {
-	var user *domains.User
-	var err error
-
-	phoneRegexp := regexp.MustCompile(`^\d+$`)
-	emailRegexp := regexp.MustCompile(`^[a-zA-Z0-9.!#$%&'*+/=?^_` + "`" + `{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$`)
-	if phoneRegexp.MatchString(dto.Credential) {
-		user, err = s.userRepo.FindByPhone(ctx, dto.Credential)
-	}
-	if user == nil && emailRegexp.MatchString(dto.Credential) {
-		user, err = s.userRepo.FindByEmail(ctx, dto.Credential)
-	}
-	if user == nil {
-		user, err = s.userRepo.FindByUsername(ctx, dto.Credential)
-	}
-
+	user, err := s.userRepo.FindByCredential(ctx, dto.Credential)
 	if err != nil {
 		return nil, err
 	}

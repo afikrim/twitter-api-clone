@@ -7,7 +7,7 @@ import (
 )
 
 type UserService interface {
-	FindAll(ctx context.Context, query *domains.QueryParamDto) ([]domains.User, error)
+	FindAll(ctx context.Context, query *domains.QueryParamDto) ([]domains.UserSummary, error)
 	FindByID(ctx context.Context, id string) (*domains.User, error)
 	FindByUsername(ctx context.Context, username string) (*domains.User, error)
 	Update(ctx context.Context, id string, dto *domains.UpdateUserDto) (*domains.User, error)
