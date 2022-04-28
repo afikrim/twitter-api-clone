@@ -13,10 +13,12 @@ import (
 	auth_service "github.com/afikrim/go-hexa-template/internal/core/services/auth"
 	country_service "github.com/afikrim/go-hexa-template/internal/core/services/country"
 	user_service "github.com/afikrim/go-hexa-template/internal/core/services/user"
+	userfollowing_service "github.com/afikrim/go-hexa-template/internal/core/services/userfollowing"
 	http_handler "github.com/afikrim/go-hexa-template/internal/handlers/http"
 	country_repository "github.com/afikrim/go-hexa-template/internal/repositories/country"
 	session_repository "github.com/afikrim/go-hexa-template/internal/repositories/session"
 	user_repository "github.com/afikrim/go-hexa-template/internal/repositories/user"
+	userfollowing_repository "github.com/afikrim/go-hexa-template/internal/repositories/userfollowing"
 	"github.com/go-redis/redis/v8"
 	"github.com/labstack/echo/v4"
 	"gorm.io/driver/mysql"
@@ -53,20 +55,26 @@ func main() {
 	e.Logger.SetLevel(log.LstdFlags)
 
 	countryRepository := country_repository.NewCountryRepository(db)
-	userRepository := user_repository.NewUserRepository(db)
 	sessionRepository := session_repository.NewSessionRepository(redisSession)
+	userRepository := user_repository.NewUserRepository(db)
+	userfollowingRepository := userfollowing_repository.NewUserFollowingRepository(db)
+
+	authService := auth_service.NewAuthService(userRepository, sessionRepository)
 	countryService := country_service.NewCountryService(countryRepository)
 	userService := user_service.NewUserService(userRepository)
-	authService := auth_service.NewAuthService(userRepository, sessionRepository)
+	userfollowingService := userfollowing_service.NewUserFollowingService(userfollowingRepository, userRepository)
+
+	authHandler := http_handler.NewAuthHandler(authService)
 	countryHandler := http_handler.NewCountryHandler(countryService)
 	userHandler := http_handler.NewUserHandler(userService)
-	authHandler := http_handler.NewAuthHandler(authService)
+	userfollowingHandler := http_handler.NewUserFollowingHandler(userfollowingService)
 
 	// Register routes
 	apiV1Router := e.Group("/api/v1")
+	authHandler.RegisterRoutes(apiV1Router)
 	countryHandler.RegisterRoutes(apiV1Router)
 	userHandler.RegisterRoutes(apiV1Router)
-	authHandler.RegisterRoutes(apiV1Router)
+	userfollowingHandler.RegisterRoutes(apiV1Router)
 
 	go func() {
 		address := fmt.Sprintf("%s:%d", cfg.Host, cfg.Port)

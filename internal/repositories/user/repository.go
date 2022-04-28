@@ -32,6 +32,10 @@ func (r *repository) Create(ctx context.Context, dto *domains.RegisterDto) (*dom
 }
 
 func (r *repository) FindAll(ctx context.Context, query *domains.QueryParamUserDto) ([]domains.UserSummary, *pkg_pagination.CursorPagination, error) {
+	var userModels []User
+	var users []domains.UserSummary
+	var count int64
+
 	qb := r.db.Model(&User{}).WithContext(ctx)
 	countQb := qb
 	if query.Search != "" {
@@ -45,8 +49,6 @@ func (r *repository) FindAll(ctx context.Context, query *domains.QueryParamUserD
 	qb.Offset(*query.Offset)
 	qb.Order(orderby)
 
-	var userModels []User
-	var count int64
 	err, countErr := qb.Find(&userModels).Error, countQb.Error
 	if err != nil {
 		return nil, nil, err
@@ -55,24 +57,16 @@ func (r *repository) FindAll(ctx context.Context, query *domains.QueryParamUserD
 		return nil, nil, countErr
 	}
 
-	var users []domains.UserSummary
 	for _, userModel := range userModels {
 		users = append(users, *userModel.ToDomainSummary())
 	}
 
-	next := int64(*query.Offset) + int64(*query.Limit)
-	if next >= count {
-		next = -1
-	}
-	cursor := &pkg_pagination.CursorPagination{
-		Current: int64(*query.Offset),
-		Next:    next,
-	}
+	cursor := pkg_pagination.NewCursorPagination(count, *query.Limit, *query.Offset)
 
 	return users, cursor, nil
 }
 
-func (r *repository) FindByID(ctx context.Context, id int64) (*domains.User, error) {
+func (r *repository) FindByID(ctx context.Context, id uint64) (*domains.User, error) {
 	var userModel User
 	if err := r.db.WithContext(ctx).First(&userModel, id).Error; err != nil {
 		return nil, err
@@ -109,7 +103,7 @@ func (r *repository) FindByCredential(ctx context.Context, credential string) (*
 	return userModel.ToDomainWithCountryAndTimestamps(), nil
 }
 
-func (r *repository) Update(ctx context.Context, id int64, dto *domains.UpdateUserDto) (*domains.User, error) {
+func (r *repository) Update(ctx context.Context, id uint64, dto *domains.UpdateUserDto) (*domains.User, error) {
 	var userModel User
 	if err := r.db.WithContext(ctx).Joins("Country").First(&userModel, id).Error; err != nil {
 		return nil, err
@@ -143,7 +137,7 @@ func (r *repository) Update(ctx context.Context, id int64, dto *domains.UpdateUs
 	return userModel.ToDomainWithCountryAndTimestamps(), nil
 }
 
-func (r *repository) UpdateCredential(ctx context.Context, id int64, dto *domains.UpdateUserCredentialDto) (*domains.User, error) {
+func (r *repository) UpdateCredential(ctx context.Context, id uint64, dto *domains.UpdateUserCredentialDto) (*domains.User, error) {
 	var userModel User
 	if err := r.db.WithContext(ctx).Joins("Country").First(&userModel, id).Error; err != nil {
 		return nil, err
@@ -168,7 +162,7 @@ func (r *repository) UpdateCredential(ctx context.Context, id int64, dto *domain
 	return userModel.ToDomainWithCountryAndTimestamps(), nil
 }
 
-func (r *repository) UpdatePassword(ctx context.Context, id int64, dto *domains.UpdateUserPasswordDto) (*domains.User, error) {
+func (r *repository) UpdatePassword(ctx context.Context, id uint64, dto *domains.UpdateUserPasswordDto) (*domains.User, error) {
 	var userModel User
 	if err := r.db.WithContext(ctx).Joins("Country").First(&userModel, id).Error; err != nil {
 		return nil, err
@@ -189,7 +183,7 @@ func (r *repository) UpdatePassword(ctx context.Context, id int64, dto *domains.
 	return userModel.ToDomainWithCountryAndTimestamps(), nil
 }
 
-func (r *repository) SoftRemove(ctx context.Context, id int64) error {
+func (r *repository) SoftRemove(ctx context.Context, id uint64) error {
 	var userModel User
 	if err := r.db.WithContext(ctx).First(&userModel, id).Error; err != nil {
 		return err

@@ -63,7 +63,7 @@ func (s *service) FindAll(ctx context.Context, query *domains.QueryParamUserDto)
 }
 
 func (s *service) FindByID(ctx context.Context, id string) (*domains.User, error) {
-	parsedId, err := strconv.ParseInt(id, 10, 64)
+	parsedId, err := strconv.ParseUint(id, 10, 64)
 	if err != nil {
 		return nil, err
 	}
@@ -86,7 +86,7 @@ func (s *service) FindByUsername(ctx context.Context, username string) (*domains
 }
 
 func (s *service) Update(ctx context.Context, id string, dto *domains.UpdateUserDto) (*domains.User, error) {
-	parsedId, err := strconv.ParseInt(id, 10, 64)
+	parsedId, err := strconv.ParseUint(id, 10, 64)
 	if err != nil {
 		return nil, err
 	}
@@ -100,7 +100,7 @@ func (s *service) Update(ctx context.Context, id string, dto *domains.UpdateUser
 }
 
 func (s *service) UpdateCredential(ctx context.Context, id string, dto *domains.UpdateUserCredentialDto) (*domains.User, error) {
-	parsedId, err := strconv.ParseInt(id, 10, 64)
+	parsedId, err := strconv.ParseUint(id, 10, 64)
 	if err != nil {
 		return nil, err
 	}
@@ -114,7 +114,7 @@ func (s *service) UpdateCredential(ctx context.Context, id string, dto *domains.
 }
 
 func (s *service) UpdatePassword(ctx context.Context, id string, dto *domains.UpdateUserPasswordDto) (*domains.User, error) {
-	parsedId, err := strconv.ParseInt(id, 10, 64)
+	parsedId, err := strconv.ParseUint(id, 10, 64)
 	if err != nil {
 		return nil, err
 	}
@@ -128,7 +128,7 @@ func (s *service) UpdatePassword(ctx context.Context, id string, dto *domains.Up
 }
 
 func (s *service) SoftRemove(ctx context.Context, id string) error {
-	parsedId, err := strconv.ParseInt(id, 10, 64)
+	parsedId, err := strconv.ParseUint(id, 10, 64)
 	if err != nil {
 		return err
 	}
